@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://d3js.org/topojson.v1.min.js"></script>
+<script src="https://unpkg.com/versor"></script>
+    <style>
+    body,
+html {
+	width: 100%;
+	height: 100vh;
+	margin: 0;
+	background: radial-gradient(#d63031, #000);
+	overflow: hidden;
+	font-family: Rubik, sans-serif
+}
+
+#current {
+  position: absolute;
+  color: white;
+  font-family: sans-serif;
+  margin-left: 4%;
+  margin-top: 4%;
+}
+    </style>
+</head>
+
+<body>
+<h2 id="current"></h2>
+<canvas id="globe"></canvas>
+<script src="globe_hover.js"></script>
+</body>

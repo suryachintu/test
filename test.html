@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://d3js.org/topojson.v1.min.js"></script>
+
+    <style>
+    body { margin:0;position:fixed;top:0;right:0;bottom:0;left:0;background: #fcfcfa; }
+
+
+
+    </style>
+</head>
+
+<body>
+<script>
+
+
+/* Set up */
+/* ====== */
+
+
+var width = 960,
+height = 500,
+originalScale = height / 2.1,
+scale = originalScale,
+translation = [width / 2, height / 2],
+scaleChange,
+rotation;
+
+var sphere = {type: 'Sphere'};
+
+var graticule = d3.geoGraticule();
+
+function circle(ctx, x, y, radius, colour) {
+  ctx.fillStyle = colour;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 2 * Math.PI, false);
+  ctx.fill()
+}
+
+// set up the main canvas and the projection
+
+var canvas = d3.select('body').append('canvas')
+    .attr('width', width)
+    .attr('height', height);
+
+var context = canvas.node().getContext('2d');
+
+var projection = d3.geoOrthographic()
+    .scale(scale)
+    .translate(translation)
+    .clipAngle(90);
+
+var path = d3.geoPath()
+    .projection(projection)
+    .context(context)
+    .pointRadius(5);
+
+
+/* Data load */
+/* ========= */
+
+
+d3.queue()
+  .defer(d3.csv, 'cities_all.csv')
+  .defer(d3.json, 'world-110m-simple.json')
+  .await(load);
+
+
+function load(error, cities, world) {
+  if (error) { console.log(error); }
+
+  var land = topojson.feature(world, world.objects.countries),
+      grid = graticule();
+
+
+  var outerArray = [];
+  cities.forEach(function(el) {
+
+    var innerArray = [+el.Longitude, +el.Latitude];
+    outerArray.push(innerArray);
+
+  });
+
+  var points = {
+    type: "MultiPoint",
+    coordinates: outerArray
+  };
+
+  console.log(land);
+  console.log(points);
+
+
+
+  // Draw the world
+
+  function drawWorld() {
+
+    context.clearRect(0, 0, width, height);
+
+    context.save();
+
+    context.beginPath();
+    path({type: "Sphere"});
+    context.lineWidth = 0;
+    context.strokeStyle = "transparent";
+    context.stroke();
+    context.fillStyle = "rgba(1, 1, 1, 1)";
+    context.fill();
+
+
+    projection.clipAngle(180);
+
+    context.beginPath();
+    path(land);
+    context.fillStyle = "rgba(89, 18, 18, 0.8)";
+    context.fill();
+
+
+    context.beginPath();
+    path(land);
+    context.lineWidth = .5;
+    context.strokeStyle = '#fff';
+    context.stroke();
+
+    context.beginPath();
+    path(grid);
+    context.lineWidth = .5;
+    context.strokeStyle = "rgba(119,119,119,0)";
+    context.stroke();
+
+    projection.clipAngle(90);
+
+    context.beginPath();
+    path(land);
+    context.fillStyle = "#d63031";
+    context.fill();
+    context.lineWidth = 0;
+    context.strokeStyle = "transparent";
+    context.stroke();
+
+    context.beginPath();
+    path(land);
+    context.lineWidth = .5;
+    context.strokeStyle = '#fff';
+    context.stroke();
+
+//    context.beginPath();
+//    path(land);
+//    context.fillStyle = '#ccc';
+//    context.fill();
+
+//    context.beginPath();
+//    path(land);
+//    context.lineWidth = .5;
+//    context.strokeStyle = '#fff';
+//    context.stroke();
+
+    // context.beginPath();
+    // path(points);
+    // context.fillStyle = "tomato"
+    // context.fill();
+
+    //var grd = context.createRadialGradient(75, 50, 5, 90, 60, 100);
+    //grd.addColorStop(0, "red");
+    //grd.addColorStop(1, "white");
+
+    // Fill with gradient
+    //context.fillStyle = grd;
+    //context.fillRect(10, 10, 150, 100);
+
+    enableRotation()
+    context.restore();
+
+
+  } // drawWorld()
+
+
+
+  // First draw
+
+  requestAnimationFrame(drawWorld);
+
+
+
+  var previousScaleFactor = 1;
+
+  function zoomed() {
+
+    var dx = d3.event.sourceEvent.movementX;
+    var dy = d3.event.sourceEvent.movementY;
+
+    var event = d3.event.sourceEvent.type;
+
+    context.save();
+    context.clearRect(0, 0, width, height);
+    console.log('event: ' + event);
+    if (event === 'wheel') {
+
+      scaleFactor = d3.event.transform.k;
+      scaleChange = scaleFactor - previousScaleFactor;
+      scale = scale + scaleChange * originalScale;
+      projection.scale(scale);
+      previousScaleFactor = scaleFactor;
+
+    } else {
+
+      var r = projection.rotate();
+      rotation = [r[0] + dx * 0.4, r[1] - dy * 0.5, r[2]];
+      projection.rotate(rotation);
+
+    }
+
+    requestAnimationFrame(drawWorld);
+
+    context.restore();
+
+  } // zoomed()
+
+    var zoom = d3.zoom()
+    .scaleExtent([0.5, 4])
+    .on("zoom", zoomed)
+
+  //canvas.call(zoom);
+
+
+
+  function enableRotation() {
+  const config = {
+              speed: 0.005,
+              verticalTilt: -30,
+              horizontalTilt: 0
+            }
+                d3.timer(function (elapsed) {
+                    projection.rotate([config.speed * elapsed - 120, config.verticalTilt, config.horizontalTilt]);
+                    // svg.selectAll("path").attr("d", path);
+                    // drawMarkers();
+                });
+            }
+
+} // load()
+
+
+
+
+</script>
+</body>
